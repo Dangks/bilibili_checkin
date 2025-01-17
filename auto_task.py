@@ -18,6 +18,16 @@ class BilibiliTask:
             if item.strip().startswith('bili_jct'):
                 return item.split('=')[1]
         return None
+
+    def check_login_status(self):
+        """检查登录状态"""
+        try:
+            res = requests.get('https://api.bilibili.com/x/web-interface/nav', headers=self.headers)
+            if res.json()['code'] == -101:
+                return False, '账号未登录'
+            return True, None
+        except Exception as e:
+            return False, str(e)
         
     def share_video(self):
         """分享视频"""
@@ -100,12 +110,30 @@ class BilibiliTask:
 def main():
     # 从环境变量获取cookie
     cookie = os.environ.get('BILIBILI_COOKIE')
+    
+    # 如果环境变量中没有，则尝试从文件读取(用于本地运行测试)
     if not cookie:
-        print('未设置cookie')
+        try:
+            with open('cookie.txt', 'r', encoding='utf-8') as f:
+                cookie = f.read().strip()
+        except FileNotFoundError:
+            print('未找到cookie.txt文件且环境变量未设置')
+            return
+        except Exception as e:
+            print(f'读取cookie失败: {e}')
+            return
+    
+    if not cookie:
+        print('cookie为空')
         return
-        sys.exit(1)     # 退出程序
 
     bili = BilibiliTask(cookie)
+    
+    # 检查登录状态
+    login_status, message = bili.check_login_status()
+    if not login_status:
+        print(f'登录失败，原因: {message}')
+        return
     
     # 执行每日任务
     tasks = {
