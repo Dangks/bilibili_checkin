@@ -3,40 +3,20 @@ import json
 import time
 import os
 import sys
-import logging
 from datetime import datetime, timedelta, timezone
-from colorama import init, Fore, Style
-
-# 初始化 colorama
-init(autoreset=True)
+from loguru import logger
 
 # 配置日志
-class BeijingFormatter(logging.Formatter):
-    converter = datetime.fromtimestamp
-    def formatTime(self, record, datefmt=None):
-        dt = self.converter(record.created, tz=timezone.utc)
+class BeijingFormatter:
+    @staticmethod
+    def format(record):
+        dt = datetime.fromtimestamp(record["time"].timestamp(), tz=timezone.utc)
         local_dt = dt + timedelta(hours=8)
-        if datefmt:
-            s = dt.strftime(datefmt)
-            local_s = local_dt.strftime('%H:%M:%S,%f')[:-3]
-        else:
-            try:
-                s = dt.isoformat(timespec='milliseconds')
-                local_s = local_dt.isoformat(timespec='milliseconds')
-            except TypeError:
-                s = dt.isoformat()
-                local_s = local_dt.isoformat()
-        return f"{s}(CST {local_s})"
+        record["extra"]["local_time"] = local_dt.strftime('%H:%M:%S,%f')[:-3]
+        return "{time:YYYY-MM-DD HH:mm:ss,SSS}(CST {extra[local_time]}) - {level} - {message}"
 
-    def format(self, record):
-        if record.levelno == logging.ERROR:
-            record.msg = f"{Fore.RED}{record.msg}{Style.RESET_ALL}"
-        return super().format(record)
-
-formatter = BeijingFormatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S,%f')
-handler = logging.StreamHandler()
-handler.setFormatter(formatter)
-logging.basicConfig(level=logging.INFO, handlers=[handler])
+logger.remove()
+logger.add(sys.stdout, format=BeijingFormatter.format, level="INFO", colorize=True)
 
 class BilibiliTask:
     def __init__(self, cookie):
@@ -144,22 +124,22 @@ class BilibiliTask:
 
 def log_info(tasks, user_info):
     """记录任务和用户信息的日志"""
-    logging.info('=== 任务完成情况 ===')
+    logger.info('=== 任务完成情况 ===')
     for name, (success, message) in tasks.items():
         if success:
-            logging.info(f'{name}: 成功')
+            logger.info(f'{name}: 成功')
         else:
-            logging.error(f'{name}: 失败，原因: {message}')
+            logger.error(f'{name}: 失败，原因: {message}')
         
     if user_info:
         uname = user_info["uname"]
         uid = str(user_info["uid"])  # 将uid转换为字符串
-        logging.info(f'\n=== 用户信息 ===')
-        logging.info(f'用户名: {uname[0]}{"*" * (len(uname) - 1)}')
-        logging.info(f'UID: {uid[:2]}{"*" * (len(uid) - 4)}{uid[-2:]}')
-        logging.info(f'等级: {user_info["level"]}')
-        logging.info(f'经验: {user_info["exp"]}')
-        logging.info(f'硬币: {user_info["coin"]}')
+        logger.info(f'\n=== 用户信息 ===')
+        logger.info(f'用户名: {uname[0]}{"*" * (len(uname) - 1)}')
+        logger.info(f'UID: {uid[:2]}{"*" * (len(uid) - 4)}{uid[-2:]}')
+        logger.info(f'等级: {user_info["level"]}')
+        logger.info(f'经验: {user_info["exp"]}')
+        logger.info(f'硬币: {user_info["coin"]}')
 
 def main():
     # 从环境变量获取cookie
@@ -171,14 +151,14 @@ def main():
             with open('cookie.txt', 'r', encoding='utf-8') as f:
                 cookie = f.read().strip()
         except FileNotFoundError:
-            logging.error('未在目录文件或环境变量中读取到cookie')
+            logger.error('未在本地文件或环境变量中读取到cookie')
             sys.exit(1)
         except Exception as e:
-            logging.error(f'读取cookie失败: {e}')
+            logger.error(f'读取cookie失败: {e}')
             sys.exit(1)
     
     if not cookie:
-        logging.error('cookie为空')
+        logger.error('cookie为空')
         sys.exit(1)
 
     bili = BilibiliTask(cookie)
@@ -186,7 +166,7 @@ def main():
     # 检查登录状态
     login_status, message = bili.check_login_status()
     if not login_status:
-        logging.error(f'登录失败，原因: {message}')
+        logger.error(f'登录失败，原因: {message}')
         sys.exit(1)
     
     # 执行每日任务
