@@ -22,7 +22,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests loguru
           
-      - name: Execution Information
+      - name: Run Bilibili Task
         env:
           BILIBILI_COOKIE: ${{ secrets.BILIBILI_COOKIE }}
-        run: python auto_task.py
+        run: python auto_task.py | tee output.log
+
+      - name: Execution Information
+        run: cat output.log
