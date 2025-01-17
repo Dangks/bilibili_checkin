@@ -13,7 +13,7 @@ class BeijingFormatter:
         dt = datetime.fromtimestamp(record["time"].timestamp(), tz=timezone.utc)
         local_dt = dt + timedelta(hours=8)
         record["extra"]["local_time"] = local_dt.strftime('%H:%M:%S,%f')[:-3]
-        return "{time:YYYY-MM-DD HH:mm:ss,SSS}(CST {extra[local_time]}) - {level} - {message}"
+        return "{time:YYYY-MM-DD HH:mm:ss,SSS}(CST {extra[local_time]}) - {level} - {message}\n"
 
 logger.remove()
 logger.add(sys.stdout, format=BeijingFormatter.format, level="INFO", colorize=True)
@@ -124,7 +124,7 @@ class BilibiliTask:
 
 def log_info(tasks, user_info):
     """记录任务和用户信息的日志"""
-    logger.info('=== 任务完成情况 ===')
+    print('=== 任务完成情况 ===')
     for name, (success, message) in tasks.items():
         if success:
             logger.info(f'{name}: 成功')
@@ -132,14 +132,12 @@ def log_info(tasks, user_info):
             logger.error(f'{name}: 失败，原因: {message}')
         
     if user_info:
-        uname = user_info["uname"]
-        uid = str(user_info["uid"])  # 将uid转换为字符串
-        logger.info(f'\n=== 用户信息 ===')
-        logger.info(f'用户名: {uname[0]}{"*" * (len(uname) - 1)}')
-        logger.info(f'UID: {uid[:2]}{"*" * (len(uid) - 4)}{uid[-2:]}')
-        logger.info(f'等级: {user_info["level"]}')
-        logger.info(f'经验: {user_info["exp"]}')
-        logger.info(f'硬币: {user_info["coin"]}')
+        print('\n=== 用户信息 ===')
+        print(f'用户名: {user_info["uname"][0]}{"*" * (len(user_info["uname"]) - 1)}')
+        print(f'UID: {str(user_info["uid"])[:2]}{"*" * (len(str(user_info["uid"])) - 4)}{str(user_info["uid"])[-2:]}')
+        print(f'等级: {user_info["level"]}')
+        print(f'经验: {user_info["exp"]}')
+        print(f'硬币: {user_info["coin"]}')
 
 def main():
     # 从环境变量获取cookie
@@ -151,7 +149,7 @@ def main():
             with open('cookie.txt', 'r', encoding='utf-8') as f:
                 cookie = f.read().strip()
         except FileNotFoundError:
-            logger.error('未在本地文件或环境变量中读取到cookie')
+            logger.error('未找到cookie.txt文件且环境变量未设置')
             sys.exit(1)
         except Exception as e:
             logger.error(f'读取cookie失败: {e}')

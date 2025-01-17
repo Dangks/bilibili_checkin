@@ -2,7 +2,7 @@ name: Bilibili Daily Checkin
 
 on:
   schedule:
-    - cron: '0 3 * * *'  # UTC时间每天3点执行(对应北京时间 11:00)
+    - cron: '0 3 * * *'  # UTC时间每天3点执行(对应CST时间 11:00)
   workflow_dispatch:  # 支持手动触发
 
 jobs:
@@ -22,10 +22,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install requests loguru
           
-      - name: Run Bilibili Task
+      - name: Execution Information
         env:
           BILIBILI_COOKIE: ${{ secrets.BILIBILI_COOKIE }}
-        run: python auto_task.py | tee output.log
-
-      - name: Execution Information
-        run: cat output.log
+        run: python auto_task.py
