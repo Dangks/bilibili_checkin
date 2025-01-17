@@ -4,9 +4,30 @@ import time
 import os
 import sys
 import logging
+from datetime import datetime, timedelta, timezone
 
 # 配置日志
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+class BeijingFormatter(logging.Formatter):
+    converter = datetime.fromtimestamp
+    def formatTime(self, record, datefmt=None):
+        dt = self.converter(record.created, tz=timezone.utc)
+        local_dt = dt + timedelta(hours=8)
+        if datefmt:
+            s = dt.strftime(datefmt)
+            local_s = local_dt.strftime('%H:%M:%S,%f')[:-3]
+        else:
+            try:
+                s = dt.isoformat(timespec='milliseconds')
+                local_s = local_dt.isoformat(timespec='milliseconds')
+            except TypeError:
+                s = dt.isoformat()
+                local_s = local_dt.isoformat()
+        return f"{s}(CST {local_s})"
+
+formatter = BeijingFormatter('%Y-%m-%d %H:%M:%S,%f')
+handler = logging.StreamHandler()
+handler.setFormatter(formatter)
+logging.basicConfig(level=logging.INFO, handlers=[handler])
 
 class BilibiliTask:
     def __init__(self, cookie):
