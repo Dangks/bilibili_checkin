@@ -5,6 +5,10 @@ import os
 import sys
 import logging
 from datetime import datetime, timedelta, timezone
+from colorama import init, Fore, Style
+
+# 初始化 colorama
+init(autoreset=True)
 
 # 配置日志
 class BeijingFormatter(logging.Formatter):
@@ -24,7 +28,12 @@ class BeijingFormatter(logging.Formatter):
                 local_s = local_dt.isoformat()
         return f"{s}(CST {local_s})"
 
-formatter = BeijingFormatter('%Y-%m-%d %H:%M:%S,%f')
+    def format(self, record):
+        if record.levelno == logging.ERROR:
+            record.msg = f"{Fore.RED}{record.msg}{Style.RESET_ALL}"
+        return super().format(record)
+
+formatter = BeijingFormatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S,%f')
 handler = logging.StreamHandler()
 handler.setFormatter(formatter)
 logging.basicConfig(level=logging.INFO, handlers=[handler])
@@ -162,7 +171,7 @@ def main():
             with open('cookie.txt', 'r', encoding='utf-8') as f:
                 cookie = f.read().strip()
         except FileNotFoundError:
-            logging.error('未找到cookie.txt文件且环境变量未设置')
+            logging.error('未在目录文件或环境变量中读取到cookie')
             sys.exit(1)
         except Exception as e:
             logging.error(f'读取cookie失败: {e}')
