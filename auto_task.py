@@ -3,6 +3,10 @@ import json
 import time
 import os
 import sys
+import logging
+
+# 配置日志
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 class BilibiliTask:
     def __init__(self, cookie):
@@ -108,6 +112,25 @@ class BilibiliTask:
         except:
             return None
 
+def log_info(tasks, user_info):
+    """记录任务和用户信息的日志"""
+    logging.info('=== 任务完成情况 ===')
+    for name, (success, message) in tasks.items():
+        if success:
+            logging.info(f'{name}: 成功')
+        else:
+            logging.error(f'{name}: 失败，原因: {message}')
+        
+    if user_info:
+        uname = user_info["uname"]
+        uid = str(user_info["uid"])  # 将uid转换为字符串
+        logging.info(f'\n=== 用户信息 ===')
+        logging.info(f'用户名: {uname[0]}{"*" * (len(uname) - 1)}')
+        logging.info(f'UID: {uid[:2]}{"*" * (len(uid) - 4)}{uid[-2:]}')
+        logging.info(f'等级: {user_info["level"]}')
+        logging.info(f'经验: {user_info["exp"]}')
+        logging.info(f'硬币: {user_info["coin"]}')
+
 def main():
     # 从环境变量获取cookie
     cookie = os.environ.get('BILIBILI_COOKIE')
@@ -118,14 +141,14 @@ def main():
             with open('cookie.txt', 'r', encoding='utf-8') as f:
                 cookie = f.read().strip()
         except FileNotFoundError:
-            print('未找到cookie.txt文件且环境变量未设置')
+            logging.error('未找到cookie.txt文件且环境变量未设置')
             sys.exit(1)
         except Exception as e:
-            print(f'读取cookie失败: {e}')
+            logging.error(f'读取cookie失败: {e}')
             sys.exit(1)
     
     if not cookie:
-        print('cookie为空')
+        logging.error('cookie为空')
         sys.exit(1)
 
     bili = BilibiliTask(cookie)
@@ -133,7 +156,7 @@ def main():
     # 检查登录状态
     login_status, message = bili.check_login_status()
     if not login_status:
-        print(f'签到失败，原因: {message}')
+        logging.error(f'登录失败，原因: {message}')
         sys.exit(1)
     
     # 执行每日任务
@@ -147,23 +170,8 @@ def main():
     # 获取用户信息
     user_info = bili.get_user_info()
     
-    # 输出结果
-    print('=== 任务完成情况 ===')
-    for name, (success, message) in tasks.items():
-        if success:
-            print(f'{name}: 成功')
-        else:
-            print(f'{name}: 失败，原因: {message}')
-        
-    if user_info:
-        print(f'\n=== 用户信息 ===')
-        uname = user_info["uname"]
-        uid = str(user_info["uid"])  # 将uid转换为字符串
-        print(f'用户名: {uname[0]}{"*" * (len(uname) - 1)}')
-        print(f'UID: {uid[:2]}{"*" * (len(uid) - 4)}{uid[-2:]}')
-        print(f'等级: {user_info["level"]}')
-        print(f'经验: {user_info["exp"]}')
-        print(f'硬币: {user_info["coin"]}')
+    # 记录日志
+    log_info(tasks, user_info)
 
 if __name__ == '__main__':
     main()
