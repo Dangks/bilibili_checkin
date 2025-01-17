@@ -2,6 +2,7 @@ import requests
 import json
 import time
 import os
+import sys
 
 class BilibiliTask:
     def __init__(self, cookie):
@@ -118,22 +119,22 @@ def main():
                 cookie = f.read().strip()
         except FileNotFoundError:
             print('未找到cookie.txt文件且环境变量未设置')
-            return
+            sys.exit(1)
         except Exception as e:
             print(f'读取cookie失败: {e}')
-            return
+            sys.exit(1)
     
     if not cookie:
         print('cookie为空')
-        return
+        sys.exit(1)
 
     bili = BilibiliTask(cookie)
     
     # 检查登录状态
     login_status, message = bili.check_login_status()
     if not login_status:
-        print(f'登录失败，原因: {message}')
-        return
+        print(f'签到失败，原因: {message}')
+        sys.exit(1)
     
     # 执行每日任务
     tasks = {
